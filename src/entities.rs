@@ -1,6 +1,8 @@
 use rust_decimal::Decimal;
 use std::fmt;
 
+pub mod generators;
+
 #[derive(Debug)]
 pub struct Contract {
     pub contract_id: Option<u32>,
@@ -96,7 +98,7 @@ pub struct Participant {
     access_level: u8,
     contract_id: u32,
     password: String,
-    balance_limit: Option<f32>,
+    balance_limit: Option<Decimal>,
     created_at: Option<String>,
     deleted_at: Option<String>,
 }
@@ -107,7 +109,7 @@ impl Participant {
         access_level: u8,
         contract_id: u32,
         password: String,
-        balance_limit: Option<f32>,
+        balance_limit: Option<Decimal>,
         created_at: Option<String>,
         deleted_at: Option<String>,
     ) -> Participant {
