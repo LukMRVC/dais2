@@ -2,7 +2,7 @@ use fake::{Fake, faker};
 use rust_decimal::Decimal;
 use super::{Contract, Address, Participant};
 
-pub fn gen_contract(vs: i32) -> Contract {
+pub fn gen_contract(cid: u32, vs: i32) -> Contract {
     use faker::name::en::Name;
     use faker::company::en::CompanyName;
     use faker::internet::en::FreeEmail;
@@ -19,6 +19,7 @@ pub fn gen_contract(vs: i32) -> Contract {
     let vat_id: Option<String> = if is_company { Some(format!("CZ{}", id.unwrap())) } else { None };
 
     Contract::new(
+        cid,
         name,
         vs,
         FreeEmail().fake(),
@@ -30,10 +31,11 @@ pub fn gen_contract(vs: i32) -> Contract {
     )
 }
 
-pub fn gen_address(contract_id: u32) -> Address {
+pub fn gen_address(aid: u32, contract_id: u32) -> Address {
     use fake::faker::address::en::{CityName, StreetName, ZipCode, BuildingNumber};
     
     Address::new(
+        aid,
         CityName().fake(),
         None,
         StreetName().fake(),
@@ -43,13 +45,13 @@ pub fn gen_address(contract_id: u32) -> Address {
     )
 }
 
-pub fn gen_participant(contract_id: u32, f: &fake::StringFaker) -> Participant {
+pub fn gen_participant(pid: u32, contract_id: u32, f: &fake::StringFaker<std::ops::Range<usize>>) -> Participant {
     use faker::name::en::FirstName;
     use faker::boolean::en::Boolean;
-    use fake::StringFaker;
     let has_limit: bool = Boolean(25).fake();
 
     Participant::new(
+        pid,
         FirstName().fake(),
         (1..=3).fake::<u8>(),
         contract_id,

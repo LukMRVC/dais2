@@ -3,6 +3,14 @@ use std::fmt;
 
 pub mod generators;
 
+pub trait CommaDelimited {
+    fn to_csv(&self) -> String;
+}
+
+pub trait SqlInsert {
+    fn insert_header() -> String;
+}
+
 #[derive(Debug)]
 pub struct Contract {
     pub contract_id: Option<u32>,
@@ -20,6 +28,7 @@ pub struct Contract {
 
 impl Contract {
     pub fn new(
+        cid: u32,
         cn: String,
         vs: i32,
         email: String,
@@ -30,7 +39,7 @@ impl Contract {
         vat_id: Option<String>,
     ) -> Contract {
         Contract {
-            contract_id: None,
+            contract_id: Some(cid),
             contract_name: cn,
             variable_symbol: vs,
             email,
@@ -60,9 +69,16 @@ impl fmt::Display for Contract {
     }
 }
 
+impl SqlInsert for Contract {
+    fn insert_header() -> String {
+        "contract(contract_id, contract_name, variable_symbol, identification_number, vat_identification_number, \
+            created_at, deleted_at, notify_limit, email, phone_number, bonus_amount)".to_string()
+    }
+}
+
 #[derive(Debug)]
 pub struct Address {
-    address_id: Option<i32>,
+    address_id: Option<u32>,
     city: String,
     district: Option<String>,
     street_name: String,
@@ -73,6 +89,7 @@ pub struct Address {
 
 impl Address {
     pub fn new(
+        aid: u32,
         city: String,
         district: Option<String>,
         street_name: String,
@@ -81,7 +98,7 @@ impl Address {
         contract_id: u32,
     ) -> Address {
         Address {
-            address_id: None,
+            address_id: Some(aid),
             city,
             district,
             street_name,
@@ -92,6 +109,13 @@ impl Address {
     }
 }
 
+impl SqlInsert for Address {
+    fn insert_header() -> String {
+        "address(address_id, city, district, street_name, house_number, zip_code, contract_id)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct Participant {
     participant_id: Option<u32>,
     name: String,
@@ -105,6 +129,7 @@ pub struct Participant {
 
 impl Participant {
     pub fn new(
+        pid: u32,
         name: String,
         access_level: u8,
         contract_id: u32,
@@ -114,7 +139,7 @@ impl Participant {
         deleted_at: Option<String>,
     ) -> Participant {
         Participant {
-            participant_id: None,
+            participant_id: Some(pid),
             name,
             access_level,
             contract_id,
@@ -126,6 +151,13 @@ impl Participant {
     }
 }
 
+impl SqlInsert for Participant {
+    fn insert_header() -> String {
+        "participant(participant_id, name, access_level, contract_id, password, balance_limit, created_at, deleted_at)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct VoipNumber {
     number_id: Option<u32>,
     phone_country_code: u16,
@@ -166,6 +198,14 @@ impl VoipNumber {
     }
 }
 
+impl SqlInsert for VoipNumber {
+    fn insert_header() -> String {
+        "voip_number(number_id, phone_country_code, number, participant_id, password, current_state, \
+            foreign_block, quarantine_until, activated, deleted_at)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct NumberRequest {
     participant_id: u32,
     number_id: u32,
@@ -182,6 +222,13 @@ impl NumberRequest {
     }
 }
 
+impl SqlInsert for NumberRequest {
+    fn insert_header() -> String {
+        "number_request(participant_id, number_id)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct PriceList {
     price_list_id: Option<u32>,
     tariffication_first: u8,
@@ -207,6 +254,13 @@ impl PriceList {
     }
 }
 
+impl SqlInsert for PriceList {
+    fn insert_header() -> String {
+        "price_list(price_list_id, tariffication_first, tariffication_second, price_per_second, phone_country_code)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct CallDetailRecord {
     call_id: Option<i32>,
     disposition: String,
@@ -219,6 +273,14 @@ pub struct CallDetailRecord {
     price_list_id: Option<u32>,
 }
 
+impl SqlInsert for CallDetailRecord {
+    fn insert_header() -> String {
+        "call_detail_record(call_id, disposition, source_num, destination_num, length, \
+            call_date, number_id, incoming_outgoing, price_list_id)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct InvoiceItem {
     item_id: Option<u32>,
     item_name: String,
@@ -235,6 +297,13 @@ impl InvoiceItem {
     }
 }
 
+impl SqlInsert for InvoiceItem {
+    fn insert_header() -> String {
+        "invoice_item(item_id, item_name, unit_cost)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct Invoice {
     invoice_number: u64,
     amount: f32,
@@ -270,6 +339,13 @@ impl Invoice {
     }
 }
 
+impl SqlInsert for Invoice {
+    fn insert_header() -> String {
+        "invoice(invoice_number, amount, tax_value_percent, created_at, taxable_period, maturity, paid, contract_id)".to_string()
+    }
+}
+
+#[derive(Debug)]
 pub struct InvoiceHasItems {
     invoice_number: u64,
     invoice_item_id: u32,
@@ -290,5 +366,11 @@ impl InvoiceHasItems {
             item_unit_cost,
             item_count,
         }
+    }
+}
+
+impl SqlInsert for InvoiceHasItems {
+    fn insert_header() -> String {
+        "invoice_has_items(invoice_number, invoice_item_id, item_unit_cost, item_count)".to_string()
     }
 }
