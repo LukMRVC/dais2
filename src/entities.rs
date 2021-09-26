@@ -286,7 +286,17 @@ impl NumberRequest {
 
 impl SqlInsert for NumberRequest {
     fn insert_header() -> String {
-        "number_request(participant_id, number_id)".to_string()
+        "number_request(participant_id, number_id, requested)".to_string()
+    }
+}
+
+impl CommaDelimited for NumberRequest {
+    fn to_csv(&self) -> String {
+        format!("{pid},{nid},{req}\n",
+            pid=self.participant_id,
+            nid=self.number_id,
+            req=self.requested
+        )
     }
 }
 
@@ -322,13 +332,25 @@ impl SqlInsert for PriceList {
     }
 }
 
+impl CommaDelimited for PriceList {
+    fn to_csv(&self) -> String {
+        format!("{pid},{t1},{t2},{pps},{pcc}\n",
+            pid=if self.price_list_id.is_some() { self.price_list_id.unwrap().to_string() } else { "nul_val".to_string() },
+            t1=self.tariffication_first,
+            t2=self.tariffication_second,
+            pps=self.price_per_second,
+            pcc=self.phone_country_code,
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct CallDetailRecord {
     call_id: Option<i32>,
     disposition: String,
     source_num: String,
     destination_num: String,
-    length_num: u16,
+    length: u16,
     call_date: String,
     number_id: u32,
     incoming_outgoing: bool,
@@ -339,6 +361,22 @@ impl SqlInsert for CallDetailRecord {
     fn insert_header() -> String {
         "call_detail_record(call_id, disposition, source_num, destination_num, length, \
             call_date, number_id, incoming_outgoing, price_list_id)".to_string()
+    }
+}
+
+impl CommaDelimited for CallDetailRecord {
+    fn to_csv(&self) -> String {
+        format!("{cid},{dis},{src},{dst},{len},{date},{nid},{io},{list}\n",
+            cid=if self.call_id.is_some() { self.call_id.unwrap().to_string() } else { "nul_val".to_string() },
+            dis=self.disposition,
+            src=self.source_num,
+            dst=self.destination_num,
+            len=self.length,
+            date=self.call_date,
+            nid=self.number_id,
+            io=self.incoming_outgoing,
+            list=if self.price_list_id.is_some() { self.price_list_id.unwrap().to_string() } else { "nul_val".to_string() },
+        )
     }
 }
 
@@ -362,6 +400,16 @@ impl InvoiceItem {
 impl SqlInsert for InvoiceItem {
     fn insert_header() -> String {
         "invoice_item(item_id, item_name, unit_cost)".to_string()
+    }
+}
+
+impl CommaDelimited for InvoiceItem {
+    fn to_csv(&self) -> String {
+        format!("{id},{name},{cost}\n",
+            id=if self.item_id.is_some() { self.item_id.unwrap().to_string() } else { "nul_val".to_string() },
+            name=self.item_name,
+            cost=self.unit_cost,
+        )
     }
 }
 
@@ -407,6 +455,20 @@ impl SqlInsert for Invoice {
     }
 }
 
+impl CommaDelimited for Invoice {
+    fn to_csv(&self) -> String {
+        format!("{inum},{amount},{tax},{tax_p},{mat},{paid},{cid}\n",
+            inum=self.invoice_number,
+            amount=self.amount,
+            tax=self.tax_value_percent,
+            tax_p=self.taxable_period,
+            mat=self.maturity,
+            paid=self.paid.as_ref().unwrap_or(&"nul_val".to_string()),
+            cid=self.contract_id,
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct InvoiceHasItems {
     invoice_number: u64,
@@ -434,5 +496,16 @@ impl InvoiceHasItems {
 impl SqlInsert for InvoiceHasItems {
     fn insert_header() -> String {
         "invoice_has_items(invoice_number, invoice_item_id, item_unit_cost, item_count)".to_string()
+    }
+}
+
+impl CommaDelimited for InvoiceHasItems {
+    fn to_csv(&self) -> String {
+        format!("{inum},{iid},{iuc},{ic}\n",
+            inum=self.invoice_number,
+            iid=self.invoice_item_id,
+            iuc=self.item_unit_cost,
+            ic=self.item_count,
+        )
     }
 }
