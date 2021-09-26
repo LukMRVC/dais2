@@ -11,11 +11,13 @@ fn insert_with_copy<T>(collection: &Vec<T>) -> ()
     where T: SqlInsert + CommaDelimited
 {
     let mut client = Client::connect("host=localhost user=lukas password=lukas", NoTls).expect("Failed joining to postgres");
+    let query = format!("COPY {} FROM STDIN WITH DELIMITER AS ',' NULL AS 'nul_val'", T::insert_header());
     let mut writer = client
-        .copy_in(format!("COPY {} FROM STDIN WITH DELIMITER ',' NULL as 'null' CSV", T::insert_header()))
+        .copy_in(&query[..])
         .expect("Failed to create copy in writer");
     for item in collection {
-        writer.write_all(item.to_csv().as_bytes()).expect("Error while writing to STDIN to copy");
+        let csv = item.to_csv();
+        writer.write_all(csv.as_bytes()).expect("Error while writing to STDIN to copy");
     }
 
     writer.finish().expect("Failed to finish copying");
@@ -54,6 +56,8 @@ fn main() -> () {
         cid += 1;
         contracts.push(gen_contract(cid, vs_symbol));
     }
+    insert_with_copy(&contracts);
+
 
     let string_faker = StringFaker::with(
         String::from("0123456789abcdef").into_bytes(),
@@ -77,5 +81,6 @@ fn main() -> () {
 
         insert_with_copy(&addresses);
     }
-    insert_with_copy(&contracts);
+    insert_with_copy(&participants);
+
 }

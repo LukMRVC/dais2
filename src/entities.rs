@@ -72,7 +72,24 @@ impl fmt::Display for Contract {
 impl SqlInsert for Contract {
     fn insert_header() -> String {
         "contract(contract_id, contract_name, variable_symbol, identification_number, vat_identification_number, \
-            created_at, deleted_at, notify_limit, email, phone_number, bonus_amount)".to_string()
+            deleted_at, notify_limit, email, phone_number, bonus_amount)".to_string()
+    }
+}
+
+impl CommaDelimited for Contract {
+    fn to_csv(&self) -> String {
+        format!("{id},{name},{vs},{id_number},{vat_id},{del},{not},{email},{pn},{bonus}\n",
+            id=if self.contract_id.is_some() { self.contract_id.unwrap().to_string() } else { "nul_val".to_string() },
+            name=self.contract_name,
+            vs=self.variable_symbol,
+            id_number=if self.identification_number.is_some() { self.identification_number.unwrap().to_string() } else { "nul_val".to_string() },
+            vat_id=self.vat_identification_number.as_ref().unwrap_or(&"nul_val".to_string()),
+            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+            not=if self.notify_limit.is_some() { self.notify_limit.unwrap().to_string() } else { "nul_val".to_string() },
+            email=self.email,
+            pn=self.phone_number,
+            bonus=if self.bonus_amount.is_some() { self.bonus_amount.unwrap().to_string() } else { "nul_val".to_string() },
+        )
     }
 }
 
@@ -115,6 +132,20 @@ impl SqlInsert for Address {
     }
 }
 
+impl CommaDelimited for Address {
+    fn to_csv(&self) -> String {
+        format!("{id},{city},{dis},{street},{num},{zip},{cid}\n",
+            id=if self.address_id.is_some() { self.address_id.unwrap().to_string() } else { "nul_val".to_string() },
+            city=self.city,
+            dis=self.district.as_ref().unwrap_or(&"nul_val".to_string()),
+            street=self.street_name,
+            num=self.house_number,
+            zip=self.zip_code,
+            cid=self.contract_id,
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct Participant {
     participant_id: Option<u32>,
@@ -153,7 +184,21 @@ impl Participant {
 
 impl SqlInsert for Participant {
     fn insert_header() -> String {
-        "participant(participant_id, name, access_level, contract_id, password, balance_limit, created_at, deleted_at)".to_string()
+        "participant(participant_id, name, access_level, contract_id, password, balance_limit, deleted_at)".to_string()
+    }
+}
+
+impl CommaDelimited for Participant {
+    fn to_csv(&self) -> String {
+        format!("{id},{name},{access},{cid},{pass},{limit},{del}\n",
+            id=if self.participant_id.is_some() { self.participant_id.unwrap().to_string() } else { "nul_val".to_string() },
+            name=self.name,
+            access=self.access_level,
+            cid=self.contract_id,
+            pass=self.password,
+            limit=if self.balance_limit.is_some() { self.balance_limit.unwrap().to_string() } else { "nul_val".to_string() },
+            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+        )
     }
 }
 
@@ -202,6 +247,23 @@ impl SqlInsert for VoipNumber {
     fn insert_header() -> String {
         "voip_number(number_id, phone_country_code, number, participant_id, password, current_state, \
             foreign_block, quarantine_until, activated, deleted_at)".to_string()
+    }
+}
+
+impl CommaDelimited for VoipNumber {
+    fn to_csv(&self) -> String {
+        format!("{id},{pcc},{num},{pid},{pass},{state},{block},{quar},{act},{del}\n",
+            id=if self.number_id.is_some() { self.number_id.unwrap().to_string() } else { "nul_val".to_string() },
+            pcc=self.phone_country_code,
+            num=self.number,
+            pid=self.participant_id,
+            pass=self.password,
+            state=self.current_state,
+            block=self.foreign_block,
+            quar=self.quarantine_until.as_ref().unwrap_or(&"nul_val".to_string()),
+            act=self.activated.as_ref().unwrap_or(&"nul_val".to_string()),
+            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+        )
     }
 }
 
