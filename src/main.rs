@@ -2,9 +2,9 @@ mod entities;
 use entities::generators::*;
 use entities::*;
 use fake::{Fake, StringFaker};
-use postgres::{Client, NoTls};
+use postgres::{Client, Config, NoTls};
 use std::convert::TryInto;
-use std::env::args;
+use std::env;
 use std::io::Write;
 use std::vec::Vec;
 
@@ -31,9 +31,8 @@ where
     writer.finish().expect("Failed to finish copying");
 }
 
-fn get_last_identities() -> (u32, u32, u32, u32, u32, u32, u32) {
-    let mut client = Client::connect("host=localhost user=lukas password=lukas", NoTls)
-        .expect("Failed joining to postgres");
+fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32) {
+    let mut client = cfg.connect(NoTls).expect("Failed joining to postgres");
     let cid: i64 = client
         .query_one("select last_value from contract_contract_id_seq", &[])
         .expect("Failed to get contract id value")
@@ -74,7 +73,25 @@ fn get_last_identities() -> (u32, u32, u32, u32, u32, u32, u32) {
 }
 
 fn main() -> () {
-    let (mut cid, mut pid, mut aid, mut vid, mut prid, mut iid, mut cdrid) = get_last_identities();
+    let args: Vec<String> = env::args().collect();
+    if args.len() <= 1 {
+        println!(
+            "Please provide arguments in form of {{hostname}} {{user}} {{password}} {{dbname}}"
+        );
+        return ();
+    }
+
+    let db_hostname = &args[1];
+    let db_user = &args[2];
+    let db_pass = &args[3];
+    let db_name = &args[4];
+    let mut cfg: Config = Client::configure();
+    cfg.host(db_hostname);
+    cfg.user(db_user);
+    cfg.password(db_pass);
+    cfg.dbname(db_name);
+
+    let (mut cid, mut pid, mut aid, mut vid, prid, mut iid, mut cdrid) = get_last_identities(&cfg);
 
     let mut vs_symbol = 100_000;
     let contracts_total = 100_000;
@@ -86,7 +103,7 @@ fn main() -> () {
     }
     insert_with_copy(&contracts);
 
-    let string_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 64..65);
+    let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 64..65);
 
     let mut participants: Vec<Participant> = Vec::<Participant>::with_capacity(contracts_total * 2);
     {
@@ -97,7 +114,11 @@ fn main() -> () {
             aid += 1;
             while idx < participaints_count {
                 pid += 1;
-                participants.push(gen_participant(pid, c.contract_id.unwrap(), &string_faker));
+                participants.push(gen_participant(
+                    pid,
+                    c.contract_id.unwrap(),
+                    &password_faker,
+                ));
                 idx += 1;
             }
             addresses.push(gen_address(aid, c.contract_id.unwrap()));
@@ -106,4 +127,29 @@ fn main() -> () {
         insert_with_copy(&addresses);
     }
     insert_with_copy(&participants);
+
+    let mut voip_numbers: Vec<VoipNumber> =
+        Vec::<VoipNumber>::with_capacity(participants.len() * 2);
+    for p in participants.iter() {
+        let mut idx = 0;
+        let numbers_count = (1..=4).fake::<u8>();
+        while idx < numbers_count {
+            vid += 1;
+            voip_numbers.push(gen_voip_number(
+                vid,
+                p.participant_id.unwrap(),
+                &password_faker,
+            ));
+        }
+    }
+
+    insert_with_copy(&voip_numbers);
+    let price_lists = vec![
+        gen_price_list(prid + 1, 49, 30, 60, 20),
+        gen_price_list(prid + 2, 420, 10, 1, 1),
+        gen_price_list(prid + 3, 421, 15, 60, 1),
+        gen_price_list(prid + 4, 48, 20, 60, 10),
+        gen_price_list(prid + 5, 43, 35, 60, 20),
+    ];
+    insert_with_copy(&price_lists);
 }

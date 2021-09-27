@@ -180,14 +180,14 @@ impl CommaDelimited for Address {
 
 #[derive(Debug)]
 pub struct Participant {
-    participant_id: Option<u32>,
-    name: String,
-    access_level: u8,
-    contract_id: u32,
-    password: String,
-    balance_limit: Option<Decimal>,
-    created_at: Option<String>,
-    deleted_at: Option<String>,
+    pub participant_id: Option<u32>,
+    pub name: String,
+    pub access_level: u8,
+    pub contract_id: u32,
+    pub password: String,
+    pub balance_limit: Option<Decimal>,
+    pub created_at: Option<String>,
+    pub deleted_at: Option<String>,
 }
 
 impl Participant {
