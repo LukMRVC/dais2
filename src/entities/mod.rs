@@ -56,11 +56,17 @@ impl Contract {
 
 impl fmt::Display for Contract {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt,"{},{},{},{},{},{},{},{}",
+        write!(
+            fmt,
+            "{},{},{},{},{},{},{},{}",
             self.variable_symbol,
             self.contract_name,
             self.identification_number.unwrap_or_default(),
-            if self.vat_identification_number.is_some() { self.vat_identification_number.as_ref().unwrap() } else { "''" },
+            if self.vat_identification_number.is_some() {
+                self.vat_identification_number.as_ref().unwrap()
+            } else {
+                "''"
+            },
             self.notify_limit.unwrap_or_default(),
             self.email,
             self.phone_number,
@@ -78,17 +84,37 @@ impl SqlInsert for Contract {
 
 impl CommaDelimited for Contract {
     fn to_csv(&self) -> String {
-        format!("{id},{name},{vs},{id_number},{vat_id},{del},{not},{email},{pn},{bonus}\n",
-            id=if self.contract_id.is_some() { self.contract_id.unwrap().to_string() } else { "nul_val".to_string() },
-            name=self.contract_name,
-            vs=self.variable_symbol,
-            id_number=if self.identification_number.is_some() { self.identification_number.unwrap().to_string() } else { "nul_val".to_string() },
-            vat_id=self.vat_identification_number.as_ref().unwrap_or(&"nul_val".to_string()),
-            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
-            not=if self.notify_limit.is_some() { self.notify_limit.unwrap().to_string() } else { "nul_val".to_string() },
-            email=self.email,
-            pn=self.phone_number,
-            bonus=if self.bonus_amount.is_some() { self.bonus_amount.unwrap().to_string() } else { "nul_val".to_string() },
+        format!(
+            "{id},{name},{vs},{id_number},{vat_id},{del},{not},{email},{pn},{bonus}\n",
+            id = if self.contract_id.is_some() {
+                self.contract_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            name = self.contract_name,
+            vs = self.variable_symbol,
+            id_number = if self.identification_number.is_some() {
+                self.identification_number.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            vat_id = self
+                .vat_identification_number
+                .as_ref()
+                .unwrap_or(&"nul_val".to_string()),
+            del = self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+            not = if self.notify_limit.is_some() {
+                self.notify_limit.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            email = self.email,
+            pn = self.phone_number,
+            bonus = if self.bonus_amount.is_some() {
+                self.bonus_amount.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
         )
     }
 }
@@ -128,20 +154,26 @@ impl Address {
 
 impl SqlInsert for Address {
     fn insert_header() -> String {
-        "address(address_id, city, district, street_name, house_number, zip_code, contract_id)".to_string()
+        "address(address_id, city, district, street_name, house_number, zip_code, contract_id)"
+            .to_string()
     }
 }
 
 impl CommaDelimited for Address {
     fn to_csv(&self) -> String {
-        format!("{id},{city},{dis},{street},{num},{zip},{cid}\n",
-            id=if self.address_id.is_some() { self.address_id.unwrap().to_string() } else { "nul_val".to_string() },
-            city=self.city,
-            dis=self.district.as_ref().unwrap_or(&"nul_val".to_string()),
-            street=self.street_name,
-            num=self.house_number,
-            zip=self.zip_code,
-            cid=self.contract_id,
+        format!(
+            "{id},{city},{dis},{street},{num},{zip},{cid}\n",
+            id = if self.address_id.is_some() {
+                self.address_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            city = self.city,
+            dis = self.district.as_ref().unwrap_or(&"nul_val".to_string()),
+            street = self.street_name,
+            num = self.house_number,
+            zip = self.zip_code,
+            cid = self.contract_id,
         )
     }
 }
@@ -190,14 +222,23 @@ impl SqlInsert for Participant {
 
 impl CommaDelimited for Participant {
     fn to_csv(&self) -> String {
-        format!("{id},{name},{access},{cid},{pass},{limit},{del}\n",
-            id=if self.participant_id.is_some() { self.participant_id.unwrap().to_string() } else { "nul_val".to_string() },
-            name=self.name,
-            access=self.access_level,
-            cid=self.contract_id,
-            pass=self.password,
-            limit=if self.balance_limit.is_some() { self.balance_limit.unwrap().to_string() } else { "nul_val".to_string() },
-            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+        format!(
+            "{id},{name},{access},{cid},{pass},{limit},{del}\n",
+            id = if self.participant_id.is_some() {
+                self.participant_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            name = self.name,
+            access = self.access_level,
+            cid = self.contract_id,
+            pass = self.password,
+            limit = if self.balance_limit.is_some() {
+                self.balance_limit.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            del = self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
         )
     }
 }
@@ -252,17 +293,25 @@ impl SqlInsert for VoipNumber {
 
 impl CommaDelimited for VoipNumber {
     fn to_csv(&self) -> String {
-        format!("{id},{pcc},{num},{pid},{pass},{state},{block},{quar},{act},{del}\n",
-            id=if self.number_id.is_some() { self.number_id.unwrap().to_string() } else { "nul_val".to_string() },
-            pcc=self.phone_country_code,
-            num=self.number,
-            pid=self.participant_id,
-            pass=self.password,
-            state=self.current_state,
-            block=self.foreign_block,
-            quar=self.quarantine_until.as_ref().unwrap_or(&"nul_val".to_string()),
-            act=self.activated.as_ref().unwrap_or(&"nul_val".to_string()),
-            del=self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
+        format!(
+            "{id},{pcc},{num},{pid},{pass},{state},{block},{quar},{act},{del}\n",
+            id = if self.number_id.is_some() {
+                self.number_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            pcc = self.phone_country_code,
+            num = self.number,
+            pid = self.participant_id,
+            pass = self.password,
+            state = self.current_state,
+            block = self.foreign_block,
+            quar = self
+                .quarantine_until
+                .as_ref()
+                .unwrap_or(&"nul_val".to_string()),
+            act = self.activated.as_ref().unwrap_or(&"nul_val".to_string()),
+            del = self.deleted_at.as_ref().unwrap_or(&"nul_val".to_string()),
         )
     }
 }
@@ -292,10 +341,11 @@ impl SqlInsert for NumberRequest {
 
 impl CommaDelimited for NumberRequest {
     fn to_csv(&self) -> String {
-        format!("{pid},{nid},{req}\n",
-            pid=self.participant_id,
-            nid=self.number_id,
-            req=self.requested
+        format!(
+            "{pid},{nid},{req}\n",
+            pid = self.participant_id,
+            nid = self.number_id,
+            req = self.requested
         )
     }
 }
@@ -334,12 +384,17 @@ impl SqlInsert for PriceList {
 
 impl CommaDelimited for PriceList {
     fn to_csv(&self) -> String {
-        format!("{pid},{t1},{t2},{pps},{pcc}\n",
-            pid=if self.price_list_id.is_some() { self.price_list_id.unwrap().to_string() } else { "nul_val".to_string() },
-            t1=self.tariffication_first,
-            t2=self.tariffication_second,
-            pps=self.price_per_second,
-            pcc=self.phone_country_code,
+        format!(
+            "{pid},{t1},{t2},{pps},{pcc}\n",
+            pid = if self.price_list_id.is_some() {
+                self.price_list_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            t1 = self.tariffication_first,
+            t2 = self.tariffication_second,
+            pps = self.price_per_second,
+            pcc = self.phone_country_code,
         )
     }
 }
@@ -360,22 +415,32 @@ pub struct CallDetailRecord {
 impl SqlInsert for CallDetailRecord {
     fn insert_header() -> String {
         "call_detail_record(call_id, disposition, source_num, destination_num, length, \
-            call_date, number_id, incoming_outgoing, price_list_id)".to_string()
+            call_date, number_id, incoming_outgoing, price_list_id)"
+            .to_string()
     }
 }
 
 impl CommaDelimited for CallDetailRecord {
     fn to_csv(&self) -> String {
-        format!("{cid},{dis},{src},{dst},{len},{date},{nid},{io},{list}\n",
-            cid=if self.call_id.is_some() { self.call_id.unwrap().to_string() } else { "nul_val".to_string() },
-            dis=self.disposition,
-            src=self.source_num,
-            dst=self.destination_num,
-            len=self.length,
-            date=self.call_date,
-            nid=self.number_id,
-            io=self.incoming_outgoing,
-            list=if self.price_list_id.is_some() { self.price_list_id.unwrap().to_string() } else { "nul_val".to_string() },
+        format!(
+            "{cid},{dis},{src},{dst},{len},{date},{nid},{io},{list}\n",
+            cid = if self.call_id.is_some() {
+                self.call_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            dis = self.disposition,
+            src = self.source_num,
+            dst = self.destination_num,
+            len = self.length,
+            date = self.call_date,
+            nid = self.number_id,
+            io = self.incoming_outgoing,
+            list = if self.price_list_id.is_some() {
+                self.price_list_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
         )
     }
 }
@@ -405,10 +470,15 @@ impl SqlInsert for InvoiceItem {
 
 impl CommaDelimited for InvoiceItem {
     fn to_csv(&self) -> String {
-        format!("{id},{name},{cost}\n",
-            id=if self.item_id.is_some() { self.item_id.unwrap().to_string() } else { "nul_val".to_string() },
-            name=self.item_name,
-            cost=self.unit_cost,
+        format!(
+            "{id},{name},{cost}\n",
+            id = if self.item_id.is_some() {
+                self.item_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
+            name = self.item_name,
+            cost = self.unit_cost,
         )
     }
 }
@@ -457,14 +527,15 @@ impl SqlInsert for Invoice {
 
 impl CommaDelimited for Invoice {
     fn to_csv(&self) -> String {
-        format!("{inum},{amount},{tax},{tax_p},{mat},{paid},{cid}\n",
-            inum=self.invoice_number,
-            amount=self.amount,
-            tax=self.tax_value_percent,
-            tax_p=self.taxable_period,
-            mat=self.maturity,
-            paid=self.paid.as_ref().unwrap_or(&"nul_val".to_string()),
-            cid=self.contract_id,
+        format!(
+            "{inum},{amount},{tax},{tax_p},{mat},{paid},{cid}\n",
+            inum = self.invoice_number,
+            amount = self.amount,
+            tax = self.tax_value_percent,
+            tax_p = self.taxable_period,
+            mat = self.maturity,
+            paid = self.paid.as_ref().unwrap_or(&"nul_val".to_string()),
+            cid = self.contract_id,
         )
     }
 }
@@ -501,11 +572,12 @@ impl SqlInsert for InvoiceHasItems {
 
 impl CommaDelimited for InvoiceHasItems {
     fn to_csv(&self) -> String {
-        format!("{inum},{iid},{iuc},{ic}\n",
-            inum=self.invoice_number,
-            iid=self.invoice_item_id,
-            iuc=self.item_unit_cost,
-            ic=self.item_count,
+        format!(
+            "{inum},{iid},{iuc},{ic}\n",
+            inum = self.invoice_number,
+            iid = self.invoice_item_id,
+            iuc = self.item_unit_cost,
+            ic = self.item_count,
         )
     }
 }
