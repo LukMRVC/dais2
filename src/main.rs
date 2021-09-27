@@ -8,12 +8,15 @@ use std::env;
 use std::io::Write;
 use std::vec::Vec;
 
-fn insert_with_copy<T>(collection: &Vec<T>) -> ()
+fn insert_with_copy<T>(cfg: &Config, collection: &Vec<T>) -> ()
 where
     T: SqlInsert + CommaDelimited,
 {
-    let mut client = Client::connect("host=localhost user=lukas password=lukas", NoTls)
+    let mut client = cfg.connect(NoTls)
         .expect("Failed joining to postgres");
+    let query = format!("ALTER TABLE {} DISABLE TRIGGER ALL", T::table_name());
+    client.execute(&query[..], &[]).expect("Failed to disable triggers");
+    
     let query = format!(
         "COPY {} FROM STDIN WITH DELIMITER AS ',' NULL AS 'nul_val'",
         T::insert_header()
@@ -27,8 +30,9 @@ where
             .write_all(csv.as_bytes())
             .expect("Error while writing to STDIN to copy");
     }
-
     writer.finish().expect("Failed to finish copying");
+    let query = format!("ALTER TABLE {} ENABLE TRIGGER ALL", T::table_name());
+    client.execute(&query[..], &[]).expect("Failed to disable triggers");
 }
 
 fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32) {
@@ -104,7 +108,7 @@ fn main() -> () {
         contracts.push(gen_contract(cid, vs_symbol));
     }
     println!("INSERTING contracts");
-    insert_with_copy(&contracts);
+    insert_with_copy(&cfg, &contracts);
 
     let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 64..65);
     {
@@ -127,10 +131,10 @@ fn main() -> () {
                 addresses.push(gen_address(aid, c.contract_id.unwrap()));
             }
             println!("INSERTING addresses");
-            insert_with_copy(&addresses);
+            insert_with_copy(&cfg, &addresses);
         }
         println!("INSERTING participants");
-        insert_with_copy(&participants);
+        insert_with_copy(&cfg, &participants);
 
         let mut voip_numbers: Vec<VoipNumber> =
             Vec::<VoipNumber>::with_capacity(participants.len() * 2);
@@ -151,7 +155,7 @@ fn main() -> () {
         }
         println!("INSERTING voip_numbers");
 
-        insert_with_copy(&voip_numbers);
+        insert_with_copy(&cfg, &voip_numbers);
         let price_lists = vec![
             gen_price_list(prid + 1, 49, 30, 60, 20),
             gen_price_list(prid + 2, 420, 10, 1, 1),
@@ -161,7 +165,7 @@ fn main() -> () {
         ];
 
         println!("INSERTING price_list");
-        insert_with_copy(&price_lists);
+        insert_with_copy(&cfg, &price_lists);
         println!("GENERATING cdrs");
 
         let mut calls: Vec<CallDetailRecord> = Vec::<CallDetailRecord>::with_capacity(5_000_000);
@@ -177,7 +181,7 @@ fn main() -> () {
             ));
         }
         println!("INSERTING cdrs");
-        insert_with_copy(&calls);
+        insert_with_copy(&cfg, &calls);
     }
 
 

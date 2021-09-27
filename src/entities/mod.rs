@@ -9,6 +9,7 @@ pub trait CommaDelimited {
 
 pub trait SqlInsert {
     fn insert_header() -> String;
+    fn table_name() -> String;
 }
 
 #[derive(Debug)]
@@ -80,6 +81,12 @@ impl SqlInsert for Contract {
         "contract(contract_id, contract_name, variable_symbol, identification_number, vat_identification_number, \
             deleted_at, notify_limit, email, phone_number, bonus_amount)".to_string()
     }
+
+    fn table_name() -> String {
+        "contract".to_string()
+    }
+
+    
 }
 
 impl CommaDelimited for Contract {
@@ -157,6 +164,10 @@ impl SqlInsert for Address {
         "address(address_id, city, district, street_name, house_number, zip_code, contract_id)"
             .to_string()
     }
+
+    fn table_name() -> String {
+        "address".to_string()
+    }
 }
 
 impl CommaDelimited for Address {
@@ -217,6 +228,10 @@ impl Participant {
 impl SqlInsert for Participant {
     fn insert_header() -> String {
         "participant(participant_id, name, access_level, contract_id, password, balance_limit, deleted_at)".to_string()
+    }
+
+    fn table_name() -> String {
+        "participant".to_string()
     }
 }
 
@@ -290,6 +305,10 @@ impl SqlInsert for VoipNumber {
         "voip_number(number_id, phone_country_code, number, participant_id, password, current_state, \
             foreign_block, quarantine_until, activated, deleted_at)".to_string()
     }
+
+    fn table_name() -> String {
+        "voip_number".to_string()
+    }
 }
 
 impl CommaDelimited for VoipNumber {
@@ -338,6 +357,10 @@ impl SqlInsert for NumberRequest {
     fn insert_header() -> String {
         "number_request(participant_id, number_id, requested)".to_string()
     }
+
+    fn table_name() -> String {
+        "number_request".to_string()
+    }
 }
 
 impl CommaDelimited for NumberRequest {
@@ -380,6 +403,10 @@ impl PriceList {
 impl SqlInsert for PriceList {
     fn insert_header() -> String {
         "price_list(price_list_id, tariffication_first, tariffication_second, price_per_second, phone_country_code)".to_string()
+    }
+
+    fn table_name() -> String {
+        "price_list".to_string()
     }
 }
 
@@ -445,6 +472,10 @@ impl SqlInsert for CallDetailRecord {
             call_date, number_id, incoming_outgoing, price_list_id)"
             .to_string()
     }
+
+    fn table_name() -> String {
+        "call_detail_record".to_string()
+    }
 }
 
 impl CommaDelimited for CallDetailRecord {
@@ -492,6 +523,10 @@ impl InvoiceItem {
 impl SqlInsert for InvoiceItem {
     fn insert_header() -> String {
         "invoice_item(item_id, item_name, unit_cost)".to_string()
+    }
+
+    fn table_name() -> String {
+        "invoice_item".to_string()
     }
 }
 
@@ -550,6 +585,10 @@ impl SqlInsert for Invoice {
     fn insert_header() -> String {
         "invoice(invoice_number, amount, tax_value_percent, created_at, taxable_period, maturity, paid, contract_id)".to_string()
     }
+
+    fn table_name() -> String {
+        "invoice".to_string()
+    }
 }
 
 impl CommaDelimited for Invoice {
@@ -594,6 +633,10 @@ impl InvoiceHasItems {
 impl SqlInsert for InvoiceHasItems {
     fn insert_header() -> String {
         "invoice_has_items(invoice_number, invoice_item_id, item_unit_cost, item_count)".to_string()
+    }
+
+    fn table_name() -> String {
+        "invoice_has_items".to_string()
     }
 }
 
