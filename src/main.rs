@@ -93,6 +93,8 @@ fn main() -> () {
 
     let (mut cid, mut pid, mut aid, mut vid, prid, mut iid, mut cdrid) = get_last_identities(&cfg);
 
+    println!("Found CID: {}", cid);
+
     let mut vs_symbol = 100_000;
     let contracts_total = 100_000;
     let mut contracts: Vec<Contract> = Vec::<Contract>::with_capacity(contracts_total);
@@ -101,55 +103,82 @@ fn main() -> () {
         cid += 1;
         contracts.push(gen_contract(cid, vs_symbol));
     }
+    println!("INSERTING contracts");
     insert_with_copy(&contracts);
 
     let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 64..65);
-
-    let mut participants: Vec<Participant> = Vec::<Participant>::with_capacity(contracts_total * 2);
     {
-        let mut addresses: Vec<Address> = Vec::<Address>::with_capacity(contracts_total);
-        for c in contracts.iter() {
-            let participaints_count = (1..=4).fake::<u8>();
-            let mut idx = 0;
-            aid += 1;
-            while idx < participaints_count {
-                pid += 1;
-                participants.push(gen_participant(
-                    pid,
-                    c.contract_id.unwrap(),
+        let mut participants: Vec<Participant> = Vec::<Participant>::with_capacity(contracts_total * 2);
+        {
+            let mut addresses: Vec<Address> = Vec::<Address>::with_capacity(contracts_total);
+            for c in contracts.iter() {
+                let participaints_count = (1..=4).fake::<u8>();
+                let mut idx = 0;
+                aid += 1;
+                while idx < participaints_count {
+                    pid += 1;
+                    participants.push(gen_participant(
+                        pid,
+                        c.contract_id.unwrap(),
+                        &password_faker,
+                    ));
+                    idx += 1;
+                }
+                addresses.push(gen_address(aid, c.contract_id.unwrap()));
+            }
+            println!("INSERTING addresses");
+            insert_with_copy(&addresses);
+        }
+        println!("INSERTING participants");
+        insert_with_copy(&participants);
+
+        let mut voip_numbers: Vec<VoipNumber> =
+            Vec::<VoipNumber>::with_capacity(participants.len() * 2);
+    let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 32..33);
+
+        println!("GENERATING voip_numbers, maximum of {}", participants.len() * 4);
+        for p in participants.iter() {
+            let numbers_count = (1..=4).fake::<u8>();
+            for _ in 0..numbers_count {
+                vid += 1;
+                voip_numbers.push(gen_voip_number(
+                    vid,
+                    p.participant_id.unwrap(),
                     &password_faker,
                 ));
-                idx += 1;
+                
             }
-            addresses.push(gen_address(aid, c.contract_id.unwrap()));
         }
+        println!("INSERTING voip_numbers");
 
-        insert_with_copy(&addresses);
-    }
-    insert_with_copy(&participants);
+        insert_with_copy(&voip_numbers);
+        let price_lists = vec![
+            gen_price_list(prid + 1, 49, 30, 60, 20),
+            gen_price_list(prid + 2, 420, 10, 1, 1),
+            gen_price_list(prid + 3, 421, 15, 60, 1),
+            gen_price_list(prid + 4, 48, 20, 60, 10),
+            gen_price_list(prid + 5, 43, 35, 60, 20),
+        ];
 
-    let mut voip_numbers: Vec<VoipNumber> =
-        Vec::<VoipNumber>::with_capacity(participants.len() * 2);
-    for p in participants.iter() {
-        let mut idx = 0;
-        let numbers_count = (1..=4).fake::<u8>();
-        while idx < numbers_count {
-            vid += 1;
-            voip_numbers.push(gen_voip_number(
-                vid,
-                p.participant_id.unwrap(),
-                &password_faker,
+        println!("INSERTING price_list");
+        insert_with_copy(&price_lists);
+        println!("GENERATING cdrs");
+
+        let mut calls: Vec<CallDetailRecord> = Vec::<CallDetailRecord>::with_capacity(5_000_000);
+        for n in 1..=5_000_000 {
+            let rnd = (0..5).fake::<usize>();
+            let rnd_num = (0..voip_numbers.len()).fake::<usize>();
+            calls.push(gen_cdr(
+                cdrid + n,
+                price_lists[rnd].phone_country_code,
+                price_lists[rnd].price_list_id.unwrap(),
+                voip_numbers[rnd_num].number.to_string(),
+                voip_numbers[rnd_num].number_id.unwrap(),
             ));
         }
+        println!("INSERTING cdrs");
+        insert_with_copy(&calls);
     }
 
-    insert_with_copy(&voip_numbers);
-    let price_lists = vec![
-        gen_price_list(prid + 1, 49, 30, 60, 20),
-        gen_price_list(prid + 2, 420, 10, 1, 1),
-        gen_price_list(prid + 3, 421, 15, 60, 1),
-        gen_price_list(prid + 4, 48, 20, 60, 10),
-        gen_price_list(prid + 5, 43, 35, 60, 20),
-    ];
-    insert_with_copy(&price_lists);
+
 }

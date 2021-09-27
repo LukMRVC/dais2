@@ -245,9 +245,9 @@ impl CommaDelimited for Participant {
 
 #[derive(Debug)]
 pub struct VoipNumber {
-    number_id: Option<u32>,
+    pub number_id: Option<u32>,
     phone_country_code: u16,
-    number: u32,
+    pub number: u32,
     participant_id: u32,
     password: String,
     current_state: u8,
@@ -259,6 +259,7 @@ pub struct VoipNumber {
 
 impl VoipNumber {
     pub fn new(
+        number_id: Option<u32>,
         phone_country_code: u16,
         number: u32,
         participant_id: u32,
@@ -270,7 +271,7 @@ impl VoipNumber {
         deleted_at: Option<String>,
     ) -> VoipNumber {
         VoipNumber {
-            number_id: None,
+            number_id,
             phone_country_code,
             number,
             participant_id,
@@ -352,11 +353,11 @@ impl CommaDelimited for NumberRequest {
 
 #[derive(Debug)]
 pub struct PriceList {
-    price_list_id: Option<u32>,
+    pub price_list_id: Option<u32>,
     tariffication_first: u8,
     tariffication_second: u8,
     price_per_second: u16,
-    phone_country_code: u16,
+    pub phone_country_code: u16,
 }
 
 impl PriceList {
@@ -401,7 +402,7 @@ impl CommaDelimited for PriceList {
 
 #[derive(Debug)]
 pub struct CallDetailRecord {
-    call_id: Option<i32>,
+    call_id: Option<u32>,
     disposition: String,
     source_num: String,
     destination_num: String,
@@ -410,6 +411,32 @@ pub struct CallDetailRecord {
     number_id: u32,
     incoming_outgoing: bool,
     price_list_id: Option<u32>,
+}
+
+impl CallDetailRecord {
+    pub fn new(
+        call_id: Option<u32>,
+        disposition: String,
+        source_num: String,
+        destination_num: String,
+        length: u16,
+        call_date: String,
+        number_id: u32,
+        incoming_outgoing: bool,
+        price_list_id: Option<u32>,
+    ) -> CallDetailRecord {
+        CallDetailRecord {
+            call_id,
+            disposition,
+            source_num,
+            destination_num,
+            length,
+            call_date,
+            number_id,
+            incoming_outgoing,
+            price_list_id
+        }
+    }
 }
 
 impl SqlInsert for CallDetailRecord {

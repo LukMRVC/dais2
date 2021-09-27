@@ -1,5 +1,5 @@
 use super::*;
-use fake::{faker, Fake};
+use fake::{Fake, faker::{self, number::raw::NumberWithFormat}};
 use rust_decimal::Decimal;
 
 pub fn gen_contract(cid: u32, vs: i32) -> Contract {
@@ -104,25 +104,25 @@ pub fn gen_voip_number(
     let start_dt: DateTime<Utc> = Utc.ymd(2018, 1, 1).and_hms(0, 0, 0);
     let is_in_quarantine = Boolean(20).fake();
 
-    VoipNumber {
-        number_id: Some(nid),
-        phone_country_code: 420,
-        number: NumberWithFormat("5########")
+    VoipNumber::new(
+        Some(nid),
+        420,
+        NumberWithFormat("5########")
             .fake::<String>()
             .parse::<u32>()
             .unwrap(),
-        participant_id: pid,
-        password: f.fake::<String>(),
-        current_state: (1..4).fake::<u8>(),
-        foreign_block: Boolean(35).fake(),
-        quarantine_until: if is_in_quarantine {
+        pid,
+        f.fake::<String>(),
+        (1..4).fake::<u8>(),
+        Boolean(35).fake(),
+        if is_in_quarantine {
             Some(DateTimeBetween(start_dt, end_dt).fake())
         } else {
             None
         },
-        activated: DateTimeBetween(start_dt, end_dt).fake(),
-        deleted_at: None,
-    }
+        DateTimeBetween(start_dt, end_dt).fake(),
+        None,
+    )
 }
 
 pub fn gen_price_list(id: u32, pcc: u16, price: u16, t1: u8, t2: u8) -> PriceList {
@@ -133,4 +133,43 @@ pub fn gen_price_list(id: u32, pcc: u16, price: u16, t1: u8, t2: u8) -> PriceLis
         tariffication_first: t1,
         tariffication_second: t2,
     }
+}
+
+pub fn gen_cdr(id: u32, pcc: u16, price_list_id: u32, number_str: String, number_id: u32) -> CallDetailRecord {
+
+    use chrono::prelude::*;
+    use fake::faker::boolean::en::Boolean;
+    use fake::faker::chrono::en::DateTimeBetween;
+    use fake::faker::number::en::NumberWithFormat;
+
+    let end_dt: DateTime<Utc> = Utc::now();
+    let start_dt: DateTime<Utc> = Utc.ymd(2018, 1, 1).and_hms(0, 0, 0);
+
+    let dispositions: [String; 3] = ["HANGUP".to_string(), "ANSWER".to_string(), "ERROR".to_string()];
+    let disposition_pick = (0..3).fake::<usize>();
+    let is_incoming = Boolean(50).fake();
+    let mut num1: String;
+    let mut num2: String;
+    if is_incoming {
+        num1 = String::from(format!("+{}", pcc));
+        num1 += &NumberWithFormat("#########").fake::<String>();;
+        num2 = number_str;
+    } else {
+        num1 = number_str;
+        num2 = String::from(format!("+{}", pcc));
+        num2 += &NumberWithFormat("#########").fake::<String>();
+    }
+
+
+    CallDetailRecord::new(
+        Some(id),
+        dispositions[disposition_pick].clone(),
+        num1,
+        num2,
+        (1..300).fake::<u16>(),
+        DateTimeBetween(start_dt, end_dt).fake(),
+        number_id,
+        is_incoming,
+        Some(price_list_id),
+    )
 }
