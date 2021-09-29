@@ -89,6 +89,7 @@ fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32)
 }
 
 fn main() -> () {
+    use fake::faker::boolean::en::Boolean;
     let args: Vec<String> = env::args().collect();
     if args.len() <= 6 {
         println!(
@@ -109,8 +110,7 @@ fn main() -> () {
     cfg.password(db_pass);
     cfg.dbname(db_name);
 
-    let (mut cid, mut pid, mut aid, mut vid, prid, mut iid, mut cdrid, mut in_num) =
-        get_last_identities(&cfg);
+    let (mut cid, mut pid, mut aid, mut vid, prid, iid, cdrid, in_num) = get_last_identities(&cfg);
 
     let mut in_num = in_num as i64;
 
@@ -128,6 +128,9 @@ fn main() -> () {
     {
         let mut participants: Vec<Participant> =
             Vec::<Participant>::with_capacity(contracts_total * 2);
+
+        let mut number_requests: Vec<NumberRequest> =
+            Vec::<NumberRequest>::with_capacity(contracts_total);
         {
             let mut addresses: Vec<Address> = Vec::<Address>::with_capacity(contracts_total);
             for c in contracts.iter() {
@@ -164,16 +167,25 @@ fn main() -> () {
             let numbers_count = (1..=4).fake::<u8>();
             for _ in 0..numbers_count {
                 vid += 1;
-                voip_numbers.push(gen_voip_number(
-                    vid,
+                voip_numbers.push(gen_voip_number(vid, p.participant_id, &password_faker));
+            }
+            let has_number_request = Boolean(10).fake();
+            if has_number_request {
+                vid += 1;
+                let vn = gen_voip_number(vid, None, &password_faker);
+                number_requests.push(gen_number_request(
+                    vn.number_id.unwrap(),
                     p.participant_id.unwrap(),
-                    &password_faker,
                 ));
+                voip_numbers.push(vn);
             }
         }
-        println!("INSERTING voip_numbers");
 
+        println!("INSERTING voip_numbers");
         insert_with_copy(&cfg, &voip_numbers);
+        println!("INSERTING number_requests");
+        insert_with_copy(&cfg, &number_requests);
+
         let price_lists = vec![
             gen_price_list(prid + 1, 49, 30, 60, 20),
             gen_price_list(prid + 2, 420, 10, 1, 1),
@@ -221,7 +233,7 @@ fn main() -> () {
             let items_count = (2..4).fake::<u8>();
             let mut total_price = 0f32;
             let mut picked_items: Vec<usize> = vec![];
-            for i in 1..items_count {
+            for _i in 1..items_count {
                 let mut rnd_item: usize;
                 loop {
                     rnd_item = (0..6).fake::<usize>();

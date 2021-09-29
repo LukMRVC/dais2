@@ -1,6 +1,6 @@
 use super::*;
 use fake::{
-    faker::{self, number::raw::NumberWithFormat},
+    faker::{self},
     Fake, Faker,
 };
 use rust_decimal::Decimal;
@@ -95,7 +95,7 @@ pub fn gen_participant(
 
 pub fn gen_voip_number(
     nid: u32,
-    pid: u32,
+    pid: Option<u32>,
     f: &fake::StringFaker<std::ops::Range<usize>>,
 ) -> VoipNumber {
     use chrono::prelude::*;
@@ -215,4 +215,13 @@ pub fn gen_invoice(invoice_number: u64, amount: f32, contract_id: u32) -> Invoic
         paid,
         contract_id,
     )
+}
+
+pub fn gen_number_request(num_id: u32, part_id: u32) -> NumberRequest {
+    use chrono::prelude::*;
+    use fake::faker::chrono::en::DateTimeBetween;
+    let end_dt: DateTime<Utc> = Utc::now();
+    let start_dt: DateTime<Utc> = Utc.ymd(2020, 1, 1).and_hms(0, 0, 0);
+    let requested = DateTimeBetween(start_dt, end_dt).fake();
+    NumberRequest::new(part_id, num_id, requested)
 }

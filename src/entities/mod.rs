@@ -261,7 +261,7 @@ pub struct VoipNumber {
     pub number_id: Option<u32>,
     phone_country_code: u16,
     pub number: u32,
-    participant_id: u32,
+    participant_id: Option<u32>,
     password: String,
     current_state: u8,
     foreign_block: bool,
@@ -275,7 +275,7 @@ impl VoipNumber {
         number_id: Option<u32>,
         phone_country_code: u16,
         number: u32,
-        participant_id: u32,
+        participant_id: Option<u32>,
         password: String,
         current_state: u8,
         foreign_block: bool,
@@ -320,7 +320,11 @@ impl CommaDelimited for VoipNumber {
             },
             pcc = self.phone_country_code,
             num = self.number,
-            pid = self.participant_id,
+            pid = if self.participant_id.is_some() {
+                self.participant_id.unwrap().to_string()
+            } else {
+                "nul_val".to_string()
+            },
             pass = self.password,
             state = self.current_state,
             block = self.foreign_block,
@@ -379,23 +383,6 @@ pub struct PriceList {
     tariffication_second: u8,
     price_per_second: u16,
     pub phone_country_code: u16,
-}
-
-impl PriceList {
-    pub fn new(
-        tariffication_first: u8,
-        tariffication_second: u8,
-        price_per_second: u16,
-        phone_country_code: u16,
-    ) -> PriceList {
-        PriceList {
-            price_list_id: None,
-            tariffication_first,
-            tariffication_second,
-            price_per_second,
-            phone_country_code,
-        }
-    }
 }
 
 impl SqlInsert for PriceList {
