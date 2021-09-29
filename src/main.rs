@@ -12,11 +12,12 @@ fn insert_with_copy<T>(cfg: &Config, collection: &Vec<T>) -> ()
 where
     T: SqlInsert + CommaDelimited,
 {
-    let mut client = cfg.connect(NoTls)
-        .expect("Failed joining to postgres");
-    let query = format!("ALTER TABLE {} DISABLE TRIGGER ALL", T::table_name());
-    client.execute(&query[..], &[]).expect("Failed to disable triggers");
-    
+    let mut client = cfg.connect(NoTls).expect("Failed joining to postgres");
+    // let query = format!("ALTER TABLE {} DISABLE TRIGGER ALL", T::table_name());
+    let query = format!("SET CONSTRAINTS ALL DEFERRED;");
+    client
+        .execute(&query[..], &[])
+        .expect("Failed to disable triggers");
     let query = format!(
         "COPY {} FROM STDIN WITH DELIMITER AS ',' NULL AS 'nul_val'",
         T::insert_header()
@@ -31,11 +32,14 @@ where
             .expect("Error while writing to STDIN to copy");
     }
     writer.finish().expect("Failed to finish copying");
-    let query = format!("ALTER TABLE {} ENABLE TRIGGER ALL", T::table_name());
-    client.execute(&query[..], &[]).expect("Failed to disable triggers");
+    // let query = format!("ALTER TABLE {} ENABLE TRIGGER ALL", T::table_name());
+    let query = format!("SET CONSTRAINTS ALL IMMEDIATE;");
+    client
+        .execute(&query[..], &[])
+        .expect("Failed to disable triggers");
 }
 
-fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32) {
+fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32) {
     let mut client = cfg.connect(NoTls).expect("Failed joining to postgres");
     let cid: i64 = client
         .query_one("select last_value from contract_contract_id_seq", &[])
@@ -65,6 +69,13 @@ fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32) {
         .query_one("select last_value from call_detail_record_call_id_seq", &[])
         .expect("Failed to get call_detail_record id value")
         .get(0);
+    let max_invoice_number: i32 = client
+        .query_one(
+            "select greatest(max(invoice_number), 97000000) from invoice",
+            &[],
+        )
+        .expect("Failed to get max invoice number")
+        .get(0);
     (
         cid.try_into().unwrap(),
         pid.try_into().unwrap(),
@@ -73,14 +84,15 @@ fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32) {
         prid.try_into().unwrap(),
         iiid.try_into().unwrap(),
         cdrid.try_into().unwrap(),
+        max_invoice_number,
     )
 }
 
 fn main() -> () {
     let args: Vec<String> = env::args().collect();
-    if args.len() <= 1 {
+    if args.len() <= 6 {
         println!(
-            "Please provide arguments in form of {{hostname}} {{user}} {{password}} {{dbname}}"
+            "Please provide arguments in form of {{hostname}} {{user}} {{password}} {{dbname}} {{contract_count}} {{calls_count}}"
         );
         return ();
     }
@@ -89,18 +101,20 @@ fn main() -> () {
     let db_user = &args[2];
     let db_pass = &args[3];
     let db_name = &args[4];
+    let contracts_total: usize = args[5].parse::<usize>().unwrap();
+    let calls_count: usize = args[6].parse::<usize>().unwrap();
     let mut cfg: Config = Client::configure();
     cfg.host(db_hostname);
     cfg.user(db_user);
     cfg.password(db_pass);
     cfg.dbname(db_name);
 
-    let (mut cid, mut pid, mut aid, mut vid, prid, mut iid, mut cdrid) = get_last_identities(&cfg);
+    let (mut cid, mut pid, mut aid, mut vid, prid, mut iid, mut cdrid, mut in_num) =
+        get_last_identities(&cfg);
 
-    println!("Found CID: {}", cid);
+    let mut in_num = in_num as i64;
 
     let mut vs_symbol = 100_000;
-    let contracts_total = 100_000;
     let mut contracts: Vec<Contract> = Vec::<Contract>::with_capacity(contracts_total);
     for _ in 1..=contracts_total {
         vs_symbol += 1;
@@ -112,7 +126,8 @@ fn main() -> () {
 
     let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 64..65);
     {
-        let mut participants: Vec<Participant> = Vec::<Participant>::with_capacity(contracts_total * 2);
+        let mut participants: Vec<Participant> =
+            Vec::<Participant>::with_capacity(contracts_total * 2);
         {
             let mut addresses: Vec<Address> = Vec::<Address>::with_capacity(contracts_total);
             for c in contracts.iter() {
@@ -138,9 +153,13 @@ fn main() -> () {
 
         let mut voip_numbers: Vec<VoipNumber> =
             Vec::<VoipNumber>::with_capacity(participants.len() * 2);
-    let password_faker = StringFaker::with(String::from("0123456789abcdef").into_bytes(), 32..33);
+        let password_faker =
+            StringFaker::with(String::from("0123456789abcdef").into_bytes(), 32..33);
 
-        println!("GENERATING voip_numbers, maximum of {}", participants.len() * 4);
+        println!(
+            "GENERATING voip_numbers, maximum of {}",
+            participants.len() * 4
+        );
         for p in participants.iter() {
             let numbers_count = (1..=4).fake::<u8>();
             for _ in 0..numbers_count {
@@ -150,7 +169,6 @@ fn main() -> () {
                     p.participant_id.unwrap(),
                     &password_faker,
                 ));
-                
             }
         }
         println!("INSERTING voip_numbers");
@@ -168,12 +186,12 @@ fn main() -> () {
         insert_with_copy(&cfg, &price_lists);
         println!("GENERATING cdrs");
 
-        let mut calls: Vec<CallDetailRecord> = Vec::<CallDetailRecord>::with_capacity(5_000_000);
-        for n in 1..=5_000_000 {
+        let mut calls: Vec<CallDetailRecord> = Vec::<CallDetailRecord>::with_capacity(calls_count);
+        for n in 1..=calls_count {
             let rnd = (0..5).fake::<usize>();
             let rnd_num = (0..voip_numbers.len()).fake::<usize>();
             calls.push(gen_cdr(
-                cdrid + n,
+                cdrid + (n as u32),
                 price_lists[rnd].phone_country_code,
                 price_lists[rnd].price_list_id.unwrap(),
                 voip_numbers[rnd_num].number.to_string(),
@@ -184,5 +202,59 @@ fn main() -> () {
         insert_with_copy(&cfg, &calls);
     }
 
+    let mut i_items: Vec<InvoiceItem> = Vec::<InvoiceItem>::with_capacity(10);
+    i_items.push(gen_invoice_item(iid + 1, String::from("Calls")));
+    i_items.push(gen_invoice_item(iid + 2, String::from("Phone 3CX")));
+    i_items.push(gen_invoice_item(iid + 3, String::from("Phone 4G")));
+    i_items.push(gen_invoice_item(iid + 4, String::from("Phone 10L")));
+    i_items.push(gen_invoice_item(iid + 5, String::from("Phone cable")));
+    i_items.push(gen_invoice_item(iid + 6, String::from("Phone 787FU")));
 
+    let mut invoices: Vec<Invoice> = Vec::<Invoice>::with_capacity(contracts_total * 3);
+    let mut iih: Vec<InvoiceHasItems> = Vec::<InvoiceHasItems>::with_capacity(contracts_total * 5);
+
+    println!("Generating invoices");
+    for c in contracts.iter() {
+        let invoices_count = (0..8).fake::<u8>();
+        for _ in 1..invoices_count {
+            in_num += 1;
+            let items_count = (2..4).fake::<u8>();
+            let mut total_price = 0f32;
+            let mut picked_items: Vec<usize> = vec![];
+            for i in 1..items_count {
+                let mut rnd_item: usize;
+                loop {
+                    rnd_item = (0..6).fake::<usize>();
+
+                    if !picked_items.contains(&rnd_item) {
+                        break;
+                    }
+                }
+
+                picked_items.push(rnd_item);
+
+                total_price += i_items[rnd_item].unit_cost;
+
+                iih.push(InvoiceHasItems::new(
+                    in_num.unsigned_abs(),
+                    i_items[rnd_item].item_id.unwrap(),
+                    i_items[rnd_item].unit_cost,
+                    1,
+                ));
+            }
+
+            invoices.push(gen_invoice(
+                in_num.unsigned_abs(),
+                total_price,
+                c.contract_id.unwrap(),
+            ));
+        }
+    }
+
+    println!("inserting invoice items");
+    insert_with_copy(&cfg, &i_items);
+    println!("Inserting invoices");
+    insert_with_copy(&cfg, &invoices);
+    println!("Inserting invoice has items");
+    insert_with_copy(&cfg, &iih);
 }

@@ -1,5 +1,8 @@
 use super::*;
-use fake::{Fake, faker::{self, number::raw::NumberWithFormat}};
+use fake::{
+    faker::{self, number::raw::NumberWithFormat},
+    Fake, Faker,
+};
 use rust_decimal::Decimal;
 
 pub fn gen_contract(cid: u32, vs: i32) -> Contract {
@@ -101,7 +104,7 @@ pub fn gen_voip_number(
     use fake::faker::number::en::NumberWithFormat;
 
     let end_dt: DateTime<Utc> = Utc::now();
-    let start_dt: DateTime<Utc> = Utc.ymd(2018, 1, 1).and_hms(0, 0, 0);
+    let start_dt: DateTime<Utc> = Utc.ymd(2020, 1, 1).and_hms(0, 0, 0);
     let is_in_quarantine = Boolean(20).fake();
 
     VoipNumber::new(
@@ -135,31 +138,39 @@ pub fn gen_price_list(id: u32, pcc: u16, price: u16, t1: u8, t2: u8) -> PriceLis
     }
 }
 
-pub fn gen_cdr(id: u32, pcc: u16, price_list_id: u32, number_str: String, number_id: u32) -> CallDetailRecord {
-
+pub fn gen_cdr(
+    id: u32,
+    pcc: u16,
+    price_list_id: u32,
+    number_str: String,
+    number_id: u32,
+) -> CallDetailRecord {
     use chrono::prelude::*;
     use fake::faker::boolean::en::Boolean;
     use fake::faker::chrono::en::DateTimeBetween;
     use fake::faker::number::en::NumberWithFormat;
 
     let end_dt: DateTime<Utc> = Utc::now();
-    let start_dt: DateTime<Utc> = Utc.ymd(2018, 1, 1).and_hms(0, 0, 0);
+    let start_dt: DateTime<Utc> = Utc.ymd(2020, 1, 1).and_hms(0, 0, 0);
 
-    let dispositions: [String; 3] = ["HANGUP".to_string(), "ANSWER".to_string(), "ERROR".to_string()];
+    let dispositions: [String; 3] = [
+        "HANGUP".to_string(),
+        "ANSWER".to_string(),
+        "ERROR".to_string(),
+    ];
     let disposition_pick = (0..3).fake::<usize>();
     let is_incoming = Boolean(50).fake();
     let mut num1: String;
     let mut num2: String;
     if is_incoming {
         num1 = String::from(format!("+{}", pcc));
-        num1 += &NumberWithFormat("#########").fake::<String>();;
+        num1 += &NumberWithFormat("#########").fake::<String>();
         num2 = number_str;
     } else {
         num1 = number_str;
         num2 = String::from(format!("+{}", pcc));
         num2 += &NumberWithFormat("#########").fake::<String>();
     }
-
 
     CallDetailRecord::new(
         Some(id),
@@ -171,5 +182,37 @@ pub fn gen_cdr(id: u32, pcc: u16, price_list_id: u32, number_str: String, number
         number_id,
         is_incoming,
         Some(price_list_id),
+    )
+}
+
+pub fn gen_invoice_item(item_id: u32, item_name: String) -> InvoiceItem {
+    InvoiceItem::new(Some(item_id), item_name, Faker.fake::<f32>())
+}
+
+pub fn gen_invoice(invoice_number: u64, amount: f32, contract_id: u32) -> Invoice {
+    use chrono::prelude::*;
+    use fake::faker::chrono::en::DateTimeBetween;
+    use faker::boolean::en::Boolean;
+
+    let end_dt: DateTime<Utc> = Utc::now();
+    let start_dt: DateTime<Utc> = Utc.ymd(2020, 1, 1).and_hms(0, 0, 0);
+    let mut paid = None;
+    let is_paid = Boolean(80).fake();
+    if is_paid {
+        paid = Some(DateTimeBetween(start_dt, end_dt).fake())
+    }
+
+    let created_at: chrono::DateTime<Utc> = DateTimeBetween(start_dt, end_dt).fake();
+    let maturity = created_at + chrono::Duration::days(14);
+
+    Invoice::new(
+        invoice_number,
+        amount,
+        21,
+        created_at.to_rfc3339(),
+        created_at.to_rfc3339(),
+        maturity.to_rfc3339(),
+        paid,
+        contract_id,
     )
 }

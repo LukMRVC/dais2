@@ -85,8 +85,6 @@ impl SqlInsert for Contract {
     fn table_name() -> String {
         "contract".to_string()
     }
-
-    
 }
 
 impl CommaDelimited for Contract {
@@ -461,7 +459,7 @@ impl CallDetailRecord {
             call_date,
             number_id,
             incoming_outgoing,
-            price_list_id
+            price_list_id,
         }
     }
 }
@@ -505,15 +503,15 @@ impl CommaDelimited for CallDetailRecord {
 
 #[derive(Debug)]
 pub struct InvoiceItem {
-    item_id: Option<u32>,
+    pub item_id: Option<u32>,
     item_name: String,
-    unit_cost: f32,
+    pub unit_cost: f32,
 }
 
 impl InvoiceItem {
-    pub fn new(item_name: String, unit_cost: f32) -> InvoiceItem {
+    pub fn new(item_id: Option<u32>, item_name: String, unit_cost: f32) -> InvoiceItem {
         InvoiceItem {
-            item_id: None,
+            item_id,
             item_name,
             unit_cost,
         }
@@ -547,7 +545,7 @@ impl CommaDelimited for InvoiceItem {
 
 #[derive(Debug)]
 pub struct Invoice {
-    invoice_number: u64,
+    pub invoice_number: u64,
     amount: f32,
     tax_value_percent: u8,
     created_at: String,
@@ -594,9 +592,10 @@ impl SqlInsert for Invoice {
 impl CommaDelimited for Invoice {
     fn to_csv(&self) -> String {
         format!(
-            "{inum},{amount},{tax},{tax_p},{mat},{paid},{cid}\n",
+            "{inum},{amount},{tax},{cr},{tax_p},{mat},{paid},{cid}\n",
             inum = self.invoice_number,
             amount = self.amount,
+            cr = self.created_at,
             tax = self.tax_value_percent,
             tax_p = self.taxable_period,
             mat = self.maturity,
