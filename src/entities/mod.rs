@@ -12,6 +12,11 @@ pub trait SqlInsert {
     fn table_name() -> String;
 }
 
+pub trait RecreatesForeignKeys {
+    fn drop_fk() -> Option<&'static str>;
+    fn recreate_fk() -> Option<&'static str>;
+}
+
 #[derive(Debug)]
 pub struct Contract {
     pub contract_id: Option<u32>,
@@ -124,6 +129,15 @@ impl CommaDelimited for Contract {
     }
 }
 
+impl RecreatesForeignKeys for Contract {
+    fn drop_fk() -> std::option::Option<&'static str> {
+        None
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        None
+    }
+}
+
 #[derive(Debug)]
 pub struct Address {
     address_id: Option<u32>,
@@ -184,6 +198,16 @@ impl CommaDelimited for Address {
             zip = self.zip_code,
             cid = self.contract_id,
         )
+    }
+}
+
+impl RecreatesForeignKeys for Address {
+    fn drop_fk() -> std::option::Option<&'static str> {
+        Some("ALTER TABLE address DROP CONSTRAINT IF EXISTS fk_address_contract")
+    }
+
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        Some("ALTER TABLE address ADD CONSTRAINT fk_address_contract FOREIGN KEY (contract_id) REFERENCES contract(contract_id)")
     }
 }
 
