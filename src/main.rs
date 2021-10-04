@@ -10,14 +10,19 @@ use std::vec::Vec;
 
 fn insert_with_copy<T>(cfg: &Config, collection: &Vec<T>) -> ()
 where
-    T: SqlInsert + CommaDelimited,
+    T: SqlInsert + CommaDelimited + RecreatesForeignKeys,
 {
     let mut client = cfg.connect(NoTls).expect("Failed joining to postgres");
-    // let query = format!("ALTER TABLE {} DISABLE TRIGGER ALL", T::table_name());
-    let query = format!("SET CONSTRAINTS ALL DEFERRED;");
-    client
-        .execute(&query[..], &[])
-        .expect("Failed to disable triggers");
+    let query: Option<&'static str> = T::drop_fk();
+    if query.is_some() {
+        let queries = query.unwrap().split(';');
+        for q in queries {
+            client
+            .execute(q, &[])
+            .expect("Failed to drop foreign keys");
+        }
+    }
+
     let query = format!(
         "COPY {} FROM STDIN WITH DELIMITER AS ',' NULL AS 'nul_val'",
         T::insert_header()
@@ -32,11 +37,17 @@ where
             .expect("Error while writing to STDIN to copy");
     }
     writer.finish().expect("Failed to finish copying");
-    // let query = format!("ALTER TABLE {} ENABLE TRIGGER ALL", T::table_name());
-    let query = format!("SET CONSTRAINTS ALL IMMEDIATE;");
-    client
-        .execute(&query[..], &[])
-        .expect("Failed to disable triggers");
+
+    let query = T::recreate_fk();
+    if query.is_some() {
+        let queries = query.unwrap().split(';');
+        for q in queries {
+            client
+            .execute(q, &[])
+            .expect("Failed to disable triggers");
+        }
+    }
+    
 }
 
 fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32) {
