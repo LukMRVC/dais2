@@ -35,16 +35,6 @@ where
             .expect("Error while writing to STDIN to copy");
     }
     writer.finish().expect("Failed to finish copying");
-
-    let query = T::recreate_fk();
-    if query.is_some() {
-        let queries = query.unwrap().split(';');
-        for q in queries {
-            client
-                .execute(q, &[])
-                .expect("Failed to enable foreign keys");
-        }
-    }
 }
 
 fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32) {
@@ -140,6 +130,22 @@ fn enable_primary_keys(cfg: &Config) {
     let queries = ENABLES.split(';');
     for q in queries {
         client.execute(q, &[]).expect("Failed to drop primary key");
+    }
+}
+
+fn enable_foreign_keys<T: RecreatesForeignKeys>(cfg: &Config) {
+    let mut client = cfg
+        .connect(NoTls)
+        .expect("Unable to connect to remote host");
+
+    let query = T::recreate_fk();
+    if query.is_some() {
+        let queries = query.unwrap().split(';');
+        for q in queries {
+            client
+                .execute(q, &[])
+                .expect("Failed to enable foreign keys");
+        }
     }
 }
 
@@ -327,4 +333,14 @@ fn main() -> () {
     insert_with_copy(&cfg, &iih);
 
     enable_primary_keys(&cfg);
+    enable_foreign_keys::<Contract>(&cfg);
+    enable_foreign_keys::<Address>(&cfg);
+    enable_foreign_keys::<Participant>(&cfg);
+    enable_foreign_keys::<VoipNumber>(&cfg);
+    enable_foreign_keys::<NumberRequest>(&cfg);
+    enable_foreign_keys::<PriceList>(&cfg);
+    enable_foreign_keys::<CallDetailRecord>(&cfg);
+    enable_foreign_keys::<Invoice>(&cfg);
+    enable_foreign_keys::<InvoiceItem>(&cfg);
+    enable_foreign_keys::<InvoiceHasItems>(&cfg);
 }
