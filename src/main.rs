@@ -17,9 +17,7 @@ where
     if query.is_some() {
         let queries = query.unwrap().split(';');
         for q in queries {
-            client
-            .execute(q, &[])
-            .expect("Failed to drop foreign keys");
+            client.execute(q, &[]).expect("Failed to drop foreign keys");
         }
     }
 
@@ -43,11 +41,10 @@ where
         let queries = query.unwrap().split(';');
         for q in queries {
             client
-            .execute(q, &[])
-            .expect("Failed to disable triggers");
+                .execute(q, &[])
+                .expect("Failed to enable foreign keys");
         }
     }
-    
 }
 
 fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32) {
@@ -99,6 +96,53 @@ fn get_last_identities(cfg: &Config) -> (u32, u32, u32, u32, u32, u32, u32, i32)
     )
 }
 
+fn drop_primary_keys(cfg: &Config) {
+    let mut client = cfg
+        .connect(NoTls)
+        .expect("Unable to connect to remote host");
+
+    const DROPS: &str =
+        "alter table invoice_has_items drop constraint if exists invoice_has_items_pkey cascade ; \
+    alter table invoice_item drop constraint if exists invoice_item_pkey cascade ; \
+    alter table invoice drop constraint if exists invoice_pkey cascade ; \
+    alter table address drop constraint if exists address_pkey cascade ; \
+    alter table call_detail_record drop constraint if exists call_detail_record_pkey cascade ; \
+    alter table price_list drop constraint if exists price_list_pkey cascade ; \
+    alter table voip_number drop constraint if exists voip_number_pkey cascade ; \
+    alter table number_request drop constraint if exists number_request_pkey cascade ; \
+    alter table participant drop constraint if exists participant_pkey cascade ; \
+    alter table contract drop constraint if exists contract_pkey cascade
+    ";
+
+    let queries = DROPS.split(';');
+    for q in queries {
+        client.execute(q, &[]).expect("Failed to drop primary key");
+    }
+}
+
+fn enable_primary_keys(cfg: &Config) {
+    let mut client = cfg
+        .connect(NoTls)
+        .expect("Unable to connect to remote host");
+
+    const ENABLES: &str = "alter table invoice_has_items add constraint invoice_has_items_pkey primary key (invoice_number, invoice_item_id); \
+    alter table invoice_item add constraint invoice_item_pkey primary key (item_id); \
+    alter table invoice add constraint invoice_pkey primary key (invoice_number); \
+    alter table address add constraint address_pkey primary key (address_id); \
+    alter table call_detail_record add constraint call_detail_record_pkey primary key (call_id); \
+    alter table price_list add constraint price_list_pkey primary key (price_list_id); \
+    alter table voip_number add constraint voip_number_pkey primary key (number_id); \
+    alter table number_request add constraint number_request_pkey primary key (number_id, participant_id); \
+    alter table participant add constraint participant_pkey primary key (participant_id); \
+    alter table contract add constraint contract_pkey primary key (contract_id)
+    ";
+
+    let queries = ENABLES.split(';');
+    for q in queries {
+        client.execute(q, &[]).expect("Failed to drop primary key");
+    }
+}
+
 fn main() -> () {
     use fake::faker::boolean::en::Boolean;
     let args: Vec<String> = env::args().collect();
@@ -121,6 +165,7 @@ fn main() -> () {
     cfg.password(db_pass);
     cfg.dbname(db_name);
 
+    drop_primary_keys(&cfg);
     let (mut cid, mut pid, mut aid, mut vid, prid, iid, cdrid, in_num) = get_last_identities(&cfg);
 
     let mut in_num = in_num as i64;
@@ -280,4 +325,6 @@ fn main() -> () {
     insert_with_copy(&cfg, &invoices);
     println!("Inserting invoice has items");
     insert_with_copy(&cfg, &iih);
+
+    enable_primary_keys(&cfg);
 }

@@ -281,13 +281,12 @@ impl CommaDelimited for Participant {
 }
 
 impl RecreatesForeignKeys for Participant {
-    
-fn drop_fk() -> std::option::Option<&'static str> {
-    Some("ALTER TABLE participant DROP CONSTRAINT IF EXISTS fk_participant_contract")
- }
-fn recreate_fk() -> std::option::Option<&'static str> {
-    Some("ALTER TABLE participant ADD CONSTRAINT fk_participant_contract FOREIGN KEY (contract_id) references contract(contract_id)")
- }
+    fn drop_fk() -> std::option::Option<&'static str> {
+        Some("ALTER TABLE participant DROP CONSTRAINT IF EXISTS fk_participant_contract")
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        Some("ALTER TABLE participant ADD CONSTRAINT fk_participant_contract FOREIGN KEY (contract_id) references contract(contract_id)")
+    }
 }
 
 #[derive(Debug)]
@@ -373,13 +372,12 @@ impl CommaDelimited for VoipNumber {
 }
 
 impl RecreatesForeignKeys for VoipNumber {
-    
-fn drop_fk() -> std::option::Option<&'static str> {
-     Some("alter table voip_number drop constraint fk_voip_number_participant")
- }
-fn recreate_fk() -> std::option::Option<&'static str> {
-     Some("alter table voip_number add constraint fk_voip_number_participant foreign key (participant_id) references participant(participant_id)")
- }
+    fn drop_fk() -> std::option::Option<&'static str> {
+        Some("alter table voip_number drop constraint IF EXISTS fk_voip_number_participant")
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        Some("alter table voip_number add constraint fk_voip_number_participant foreign key (participant_id) references participant(participant_id)")
+    }
 }
 
 #[derive(Debug)]
@@ -421,15 +419,16 @@ impl CommaDelimited for NumberRequest {
 }
 
 impl RecreatesForeignKeys for NumberRequest {
-    
-fn drop_fk() -> std::option::Option<&'static str> {
-    Some("alter table number_request drop constraint fk_number_request_participant; \
-    alter table number_request drop constraint fk_number_request_voip_number")
- }
-fn recreate_fk() -> std::option::Option<&'static str> {
-    Some("alter table number_request add constraint fk_number_request_participant foreign key (participant_id) references participant(participant_id); \
+    fn drop_fk() -> std::option::Option<&'static str> {
+        Some(
+            "alter table number_request drop constraint  IF EXISTS fk_number_request_participant; \
+    alter table number_request drop constraint  IF EXISTS fk_number_request_voip_number",
+        )
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        Some("alter table number_request add constraint fk_number_request_participant foreign key (participant_id) references participant(participant_id); \
     alter table number_request add constraint fk_number_request_voip_number foreign key (number_id) references voip_number(number_id)")
- }
+    }
 }
 
 #[derive(Debug)]
@@ -469,9 +468,12 @@ impl CommaDelimited for PriceList {
 }
 
 impl RecreatesForeignKeys for PriceList {
-    
-fn drop_fk() -> std::option::Option<&'static str> { None }
-fn recreate_fk() -> std::option::Option<&'static str> { None }
+    fn drop_fk() -> std::option::Option<&'static str> {
+        None
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        None
+    }
 }
 
 #[derive(Debug)]
@@ -551,10 +553,11 @@ impl CommaDelimited for CallDetailRecord {
 }
 
 impl RecreatesForeignKeys for CallDetailRecord {
-    
     fn drop_fk() -> std::option::Option<&'static str> {
-        Some("alter table call_detail_record drop constraint fk_cdr_voip_number; \
-        alter table call_detail_record drop constraint fk_cdr_price_list")
+        Some(
+            "alter table call_detail_record drop constraint IF EXISTS fk_cdr_voip_number; \
+        alter table call_detail_record drop constraint IF EXISTS fk_cdr_price_list",
+        )
     }
     fn recreate_fk() -> std::option::Option<&'static str> {
         Some("alter table call_detail_record add constraint fk_cdr_voip_number foreign key (number_id) references voip_number(number_id); \
@@ -605,9 +608,12 @@ impl CommaDelimited for InvoiceItem {
 }
 
 impl RecreatesForeignKeys for InvoiceItem {
-    
-    fn drop_fk() -> std::option::Option<&'static str> { None }
-    fn recreate_fk() -> std::option::Option<&'static str> { None }
+    fn drop_fk() -> std::option::Option<&'static str> {
+        None
+    }
+    fn recreate_fk() -> std::option::Option<&'static str> {
+        None
+    }
 }
 
 #[derive(Debug)]
@@ -673,11 +679,10 @@ impl CommaDelimited for Invoice {
 }
 
 impl RecreatesForeignKeys for Invoice {
-    
-    fn drop_fk() -> std::option::Option<&'static str> { 
-        Some("alter table invoice drop constraint fk_invoice_contract")
+    fn drop_fk() -> std::option::Option<&'static str> {
+        Some("alter table invoice drop constraint IF EXISTS fk_invoice_contract")
     }
-    fn recreate_fk() -> std::option::Option<&'static str> { 
+    fn recreate_fk() -> std::option::Option<&'static str> {
         Some("alter table invoice add constraint fk_invoice_contract foreign key (contract_id) references contract(contract_id)")
     }
 }
@@ -729,10 +734,11 @@ impl CommaDelimited for InvoiceHasItems {
 }
 
 impl RecreatesForeignKeys for InvoiceHasItems {
-    
     fn drop_fk() -> std::option::Option<&'static str> {
-        Some("alter table invoice_has_items drop constraint fk_ihi_invoice; \
-        alter table invoice_has_items drop constraint fk_ihi_invoice_item")
+        Some(
+            "alter table invoice_has_items drop constraint IF EXISTS fk_ihi_invoice; \
+        alter table invoice_has_items drop constraint IF EXISTS fk_ihi_invoice_item",
+        )
     }
     fn recreate_fk() -> std::option::Option<&'static str> {
         Some("alter table invoice_has_items add constraint fk_ihi_invoice foreign key (invoice_number) references invoice(invoice_number); \
